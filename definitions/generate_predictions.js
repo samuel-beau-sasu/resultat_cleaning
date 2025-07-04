@@ -14,7 +14,10 @@ indices.forEach(index => {
     const tableName = `results_agg_${index}_pred_${i}`;
 
     // Générer le SQLX pour chaque table
-    publish(tableName).query(ctx => `
+    publish(tableName,{
+      type: "table", // <-- AJOUTEZ CETTE LIGNE ICI
+      description: `Table de prédiction ${i} pour l'indice ${index}.` // Optionnel : ajoute une description dynamique
+    }).query(ctx => `
       WITH resultat_${index}_${i} AS (
         SELECT
           Date,
