@@ -1,0 +1,52 @@
+-- definitions/marts/cleaned_results.sqlx
+
+-- Liste des indices à traiter
+{% set indices = ["DJI", "CAC40", "SP500"] %}
+
+-- Boucle sur chaque indice
+{% for index_name in indices %}
+  {% for i in range(1, 11) %}
+
+config {
+  type: "table",
+  schema: "prevision_preprod",
+  name: "{{ index_name | lower }}_results_{{i}}",
+  description: "Résultats nettoyés pour l'indice {{ index_name }} avec y_proba_{{i}} et y_pred_{{i}}",
+  columns: {
+    Date: "Date de l'enregistrement",
+    Date_ref: "Date de référence",
+    step: "Étape",
+    y_proba_{{i}}: "Probabilité prédite {{i}}",
+    y_pred_{{i}}: "Prédiction {{i}}",
+    upload_timestamp: "Timestamp de téléchargement"
+  }
+}
+
+WITH resultat_{{ index_name }}_{{i}} AS (
+  SELECT
+    Date,
+    Date_ref,
+    step,
+    y_proba_{{i}},
+    y_pred_{{i}},
+    upload_timestamp,
+    ROW_NUMBER() OVER(PARTITION BY Date, Date_ref ORDER BY upload_timestamp DESC) AS rn
+  FROM `financial-data-storage.prevision_preprod.results_agregation_{{ index_name }}`
+)
+
+SELECT
+  Date,
+  Date_ref,
+  step,
+  y_proba_{{i}},
+  y_pred_{{i}},
+  upload_timestamp
+FROM resultat_{{ index_name }}_{{i}}
+WHERE rn = 1
+ORDER BY Date_ref, Date DESC;
+
+{% if not loop.last or not loop.parent.last %}---
+{% endif %}
+  {% endfor %}
+{% endfor %}
+
