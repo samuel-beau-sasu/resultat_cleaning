@@ -1,7 +1,7 @@
 // definitions/generate_predictions.js
 
 // Définir les indices sur lesquels nous voulons itérer
-const indices = ["DJI", "cac40", "SP500"];
+const indices = ["DJI"];
 
 // Définir le nombre de paires de prédictions (y_proba_n, y_pred_n)
 const numPredictions = 10;
@@ -24,7 +24,7 @@ indices.forEach(index => {
           y_pred_${i},
           upload_timestamp,
           row_number() OVER(PARTITION BY Date, Date_ref ORDER BY upload_timestamp DESC) AS rn
-        FROM \`financial-data-storage.prevision_prod.results_agregation_${index}\`
+        FROM \`financial-data-storage.prevision_preprod.results_agregation_${index}\`
         ORDER BY Date DESC
       )
 
