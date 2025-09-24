@@ -18,28 +18,48 @@ indices.forEach(index => {
       type: "table", // <-- AJOUTEZ CETTE LIGNE ICI
       description: `Table de prédiction ${i} pour l'indice ${index}.` // Optionnel : ajoute une description dynamique
     }).query(ctx => `
-      WITH resultat_${index}_${i} AS (
+      with resutat_${index}_${i} as (
         SELECT
-          Date,
-          Date_ref,
-          step,
-          y_proba_${i},
-          y_pred_${i},
-          upload_timestamp,
-          row_number() OVER(PARTITION BY Date, Date_ref ORDER BY upload_timestamp DESC) AS rn
-        FROM \`financial-data-storage.prevision_prod.results_agregation_${index}\`
-        ORDER BY Date DESC
+                Date,
+                Date_ref,
+                step,
+                y_proba_${i},
+                y_pred_${i},
+                upload_timestamp,
+                row_number() OVER(PARTITION BY Date, Date_ref ORDER BY upload_timestamp DESC) AS rn
+              FROM \`financial-data-storage.prevision_prod.results_agregation_${index}\`
+              ORDER BY Date DESC
       )
+    , resultat_hl_${index}_${i} as (
+        SELECT
+              Date,
+              Date_ref,
+              step,
+              y_proba_${i} as y_proba_hl_${i},
+              y_pred_${i} as y_pred_hl_${i},
+              upload_timestamp,
+              row_number() OVER(PARTITION BY Date, Date_ref ORDER BY upload_timestamp DESC) AS rn
+            FROM \`financial-data-storage.prevision_prod.results_hl_agregation_${index}\`
+            ORDER BY Date DESC
+    )
 
-      SELECT
-        Date,
-        Date_ref,
-        step,
-        y_proba_${i},
-        y_pred_${i}
-      FROM resultat_${index}_${i}
-      WHERE rn = 1
-      ORDER BY Date_ref, Date DESC
+      select 
+                a.Date,
+                a.Date_ref,
+                a.step,
+                a.y_proba_${i},
+                a.y_pred_${i},
+                b.y_proba_hl_${i},
+                b.y_pred_hl_${i},
+                a.upload_timestamp
+      from resutat_${index}_${i} as a 
+      left join resultat_hl_${index}_${i} as b
+      on a.Date = b.Date
+      and a.Date_ref = b.Date_ref
+      and a.step = b.step
+      and a.rn = b.rn
+      where a.rn = 1
+      order by a.Date_ref desc, a.Date desc
     `);
   }
 });
